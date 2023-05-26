@@ -1,0 +1,3 @@
+[deps]
+NamedTrajectories = "538bc3a1-5ab9-4fc3-b776-35ca1e893e08"
+QuantumCollocation = "0dc23a59-5ffb-49af-b6bd-932a8ae77adf"
