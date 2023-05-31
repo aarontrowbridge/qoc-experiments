@@ -1,10 +1,28 @@
 using QuantumCollocation
 using NamedTrajectories
 using IterativeLearningControl
+using PyCall
+
+@pyinclude joinpath(@__DIR__, "run_experiment_optimize_loop_binom.py")
+
+ilc_max_iter = 5
+samples = 1000
+
+function g(
+    A::Matrix{Float64},
+    times::AbstractVector{Float64},
+    τs::AbstractVector{Int};
+    acquisition_num::Int=samples
+)
+    as = collect(eachcol(A))
+    ys = py"take_controls_and_measure"(times, as, τs, acq_num=acquisition_num)
+    ys = collect(eachcol(transpose(ys)))
+    return ys
+end
 
 cavity_levels = 14
 
-function g_pop(x)
+function g_ref(x)
     y = []
     x1 = x[1:(2*3*14)]
     x2 = x[(2*3*14) + 1:(4*3*14)]
@@ -57,4 +75,21 @@ traj = data["trajectory"]
 system = data["system"]
 integrators = data["integrators"]
 
-experiment
+ydim = g_pop(vcat(traj[end].ψ̃1, traj[end].ψ̃2))
+
+τs = [traj.T]
+
+experiment = QuantumHardwareExperiment(g, ydim, τs)
+
+α = 1.0
+β = 0.0
+optimizer = BacktrackingLineSearch(J; α=α, β=β, verbose=true, global_min=true)
+
+prob = ILCProblem(
+    traj,
+    system,
+    integrators,
+    experiment,
+    optimizer;
+    state_names=[:ψ̃1, :ψ̃2],
+)
