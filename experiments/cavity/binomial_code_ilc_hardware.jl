@@ -48,3 +48,13 @@ function g_pop(x)
     end
     return convert(typeof(x), y)
 end
+
+data_path = joinpath(@__DIR__, "data/binomial_code/transmon_3_T_200_dt_15.0_Q_200.0_R_L1_10.0_max_iter_5000_dda_bound_1.0e-5_00000.jld2")
+
+data = load_problem(data_path; return_data=true)
+
+traj = data["trajectory"]
+system = data["system"]
+integrators = data["integrators"]
+
+experiment
