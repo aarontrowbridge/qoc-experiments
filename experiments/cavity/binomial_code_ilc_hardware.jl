@@ -75,7 +75,7 @@ traj = data["trajectory"]
 system = data["system"]
 integrators = data["integrators"]
 
-ydim = g_pop(vcat(traj[end].ψ̃1, traj[end].ψ̃2))
+ydim = g_ref(vcat(traj[end].ψ̃1, traj[end].ψ̃2))
 
 τs = [traj.T]
 
