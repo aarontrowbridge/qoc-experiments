@@ -93,3 +93,41 @@ prob = ILCProblem(
     optimizer;
     state_names=[:ψ̃1, :ψ̃2],
 )
+
+experiment_name = "samples_$(samples)"
+
+output_dir = @__DIR__() * "//plots//binomial_code//hardware"
+
+io = open(generate_file_path(
+    "txt",
+    experiment_name * "_log",
+    output_dir
+), "w")
+
+solve!(prob; io=io)
+
+plot_path = generate_file_path(
+    "gif",
+    experiment_name * "_objective",
+    output_dir
+)
+
+save_animation(plot_path, prob)
+
+cos_sims_plot_path = generate_file_path(
+    "png",
+    experiment_name * "_cos_sims",
+    output_dir
+)
+
+problem_save_path = generate_file_path(
+    "jld2",
+    experiment_name * "_problem",
+    output_dir
+)
+
+jldsave(problem_save_path; prob)
+
+dZs = [dZ.datavec for dZ ∈ prob.dZs]
+
+plot_cosine_similarity(cos_sims_plot_path, dZs)
