@@ -1,6 +1,7 @@
 using QuantumCollocation
 using NamedTrajectories
 using IterativeLearningControl
+using LinearAlgebra
 using PyCall
 
 @pyinclude joinpath(@__DIR__, "run_experiment_optimize_loop_binom.py")
@@ -75,11 +76,14 @@ traj = data["trajectory"]
 system = data["system"]
 integrators = data["integrators"]
 
-ydim = length(g_ref(vcat(traj[end].ψ̃1, traj[end].ψ̃2)))
+y_goal = g_ref(vcat(traj[end].ψ̃1, traj[end].ψ̃2))
+ydim = length(y_goal)
 
 τs = [traj.T]
 
 experiment = QuantumHardwareExperiment(g, ydim, τs)
+
+J(y) = norm(y - y_goal, 1)
 
 α = 1.0
 β = 0.0
