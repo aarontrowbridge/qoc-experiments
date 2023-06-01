@@ -1,4 +1,5 @@
 [deps]
+HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
 IterativeLearningControl = "55efb022-e1be-4044-9089-57a478d003fb"
 NamedTrajectories = "538bc3a1-5ab9-4fc3-b776-35ca1e893e08"
 QuantumCollocation = "0dc23a59-5ffb-49af-b6bd-932a8ae77adf"

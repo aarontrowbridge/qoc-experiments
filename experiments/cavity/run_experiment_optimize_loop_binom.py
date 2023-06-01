@@ -9,7 +9,7 @@ path = os.getcwd()
 
 
 def take_controls_and_measure(times, controls, taus, measure_with_piby2s=False, acq_num=2000):
-    filepath = "S:\\KevinHe\\Optimal Control and Blockade\\Aditya work\\221117_hardware_looping\\"
+    filepath = "S:\\KevinHe\\Optimal Control and Blockade\\Aditya work\\230531_hardware_looping\\"
     path = os.getcwd()
 
     ##### Create file that will be accessed by the experiment code #####
@@ -23,7 +23,7 @@ def take_controls_and_measure(times, controls, taus, measure_with_piby2s=False, 
     # even if times is evenly spaced
 
     file_number = 0
-    pulse_filename = "hardware_looping_tests_v2.h5"
+    pulse_filename = "hardware_looping_tests.h5"
     while os.path.exists(os.path.join(filepath, str(file_number).zfill(5) + "_" + pulse_filename)):
         file_number += 1
     pulse_filename = str(file_number).zfill(5) + "_" + pulse_filename 
@@ -161,8 +161,7 @@ def take_controls_and_measure(times, controls, taus, measure_with_piby2s=False, 
                 output.append(pop)
                 
             final_output.append(output)
-
-    return np.array(final_output)
+    return np.array(final_output).flatten()
 
 # # Testing that the code runs
 # filename = "S:\\KevinHe\\Optimal Control and Blockade\\Aditya work\\221114_Aaron_pulses\\converted\\g0_to_g1_T_102_dt_4.0_Q_200.0_R_0.1_u_bound_0.0001_iter_10000_00005_noflip.h5"

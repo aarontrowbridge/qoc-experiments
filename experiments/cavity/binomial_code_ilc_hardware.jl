@@ -7,7 +7,7 @@ using PyCall
 @pyinclude joinpath(@__DIR__, "run_experiment_optimize_loop_binom.py")
 
 ilc_max_iter = 5
-samples = 1000
+samples = 100
 
 function g(
     A::Matrix{Float64},
@@ -17,7 +17,9 @@ function g(
 )
     as = collect(eachcol(A))
     ys = py"take_controls_and_measure"(times, as, τs, acq_num=acquisition_num)
-    ys = collect(eachcol(transpose(ys)))
+    display(ys)
+    ys = collect.(collect(eachcol(ys)))
+    display(ys)
     return ys
 end
 
@@ -89,13 +91,25 @@ J(y) = norm(y - y_goal, 1)
 β = 0.0
 optimizer = BacktrackingLineSearch(J; α=α, β=β, verbose=true, global_min=true)
 
+R_val = 0.01
+
+R = (
+    a=R_val,
+    da=R_val,
+    dda=R_val,
+    ψ̃1=R_val,
+    ψ̃2=R_val,
+)
+
 prob = ILCProblem(
     traj,
     system,
     integrators,
     experiment,
     optimizer;
+    g_ref=g_ref,
     state_names=[:ψ̃1, :ψ̃2],
+    R=R
 )
 
 experiment_name = "samples_$(samples)"
