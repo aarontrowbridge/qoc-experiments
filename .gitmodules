@@ -1,0 +1,3 @@
+[submodule "experiments/QRAM/qutip_sims"]
+	path = experiments/QRAM/qutip_sims
+	url = git@github.com:sebastienLeg/qutip_sims.git
