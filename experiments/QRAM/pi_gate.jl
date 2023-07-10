@@ -3,87 +3,29 @@ import QuantumCollocation: lift
 using NamedTrajectories
 using LinearAlgebra
 
-levels = 2
-gate_qubit_levels = 2
+include(joinpath(@__DIR__, "qram_system.jl"))
 
-qubits = 4
+qubits = [1, 2]
+levels = [2, 2]
+drives = [1, 2]
+gate = :X
 
-α = [225.78, 100.33, 189.32, 172.15] * 1e-3 # GHz
+system = QRAMSystem(; qubits=qubits, levels=levels, drives=drives)
 
-χ = Symmetric([
-    0 -5.10982939 -0.18457118 -0.50235316;
-    0       0     -0.94914758 -1.07618574;
-    0       0           0     -0.44607489;
-    0       0           0           0
-]) * 1e-3 # GHz
-
-â_dag = create(levels)
-â = annihilate(levels)
-
-lift(op, i; l=levels) = lift(op, i, qubits; l=l)
-# lift_gate_qubit(op)
-
-# drift hamiltonian for ith qubit
-H_q(i; l=levels) = -α[i] / 2 * lift(â_dag, i; l=l)^2 * lift(â, i; l=l)^2
-
-# drift interaction hamiltonian for ith and jth qubit
-H_c_ij(i, j; l=levels) =
-    χ[i, j] *
-    lift(â_dag, i; l=l) *
-    lift(â, i; l=l) *
-    lift(â_dag, j; l=l) *
-    lift(â, j; l=l)
-
-# drive hamiltonian for ith qubit, real part
-H_d_real(i; l=levels) = 1 / 2 * (lift(â_dag, i; l=l) + lift(â, i; l=l))
-
-# drive hamiltonian for ith qubit, imaginary part
-H_d_imag(i; l=levels) = 1im / 2 * (lift(â_dag, i; l=l) - lift(â, i; l=l))
-
-# total drift hamiltonian
-H_drift =
-    sum(H_q(i) for i = 1:qubits) +
-    sum(H_c_ij(i, j) for i = 1:qubits, j = 1:qubits if j > i)
-
-H_drift *= 2π
-
-# make vector of drive hamiltonians: [H_d_real(1), H_d_imag(1), H_d_real(2), ...]
-# there's probably a cleaner way to do this lol
-# H_drives = collect.(vec(vcat(
-#     transpose(Matrix{ComplexF64}.([H_d_real(i) for i = 1:qubits])),
-#     transpose(Matrix{ComplexF64}.([H_d_imag(i) for i = 1:qubits]))
-# )))
-
-H_drives = Matrix{ComplexF64}.([H_d_real(1), H_d_imag(1), H_d_real(2), H_d_imag(2)])
-# H_drives = Matrix{ComplexF64}.([H_d_real(2), H_d_imag(2)])
-H_drives .*= 2π
-
-# make quantum system
-system = QuantumSystem(H_drift, H_drives)
-
-# create goal unitary
-Id = 1.0I(levels)
-g = cavity_state(0, levels)
-e = cavity_state(1, levels)
-# f = cavity_state(2, levels)
-eg = e * g'
-ge = g * e'
-# ff = f * f'
-U_goal = Id ⊗ (eg + ge) ⊗ Id ⊗ Id
-# U_goal = Id ⊗ (eg + ge + ff) ⊗ Id ⊗ Id
+U_init, U_goal = qram_subspace_unitary(levels, gate, 2)
 
 # time parameters
 duration = 200.0 # ns
 T = 100
 Δt = duration / T
-Δt_max = 1.2 * Δt
-Δt_min = 1.7
+Δt_max = 1.5 * Δt
+Δt_min = 0.5 * Δt
 
 # drive constraint: 20 MHz (linear units)
 a_bound = 20 * 1e-3 # GHz
 
 # pulse acceleration (used to control smoothness)
-dda_bound = 2e-3
+dda_bound = 1e-3
 
 # maximum number of iterations
 max_iter = 500
@@ -92,7 +34,7 @@ max_iter = 500
 warm_start = false
 
 if warm_start
-    data_path = joinpath(@__DIR__, "data/limited_drives_T_100_dt_1.0_dda_0.001_a_0.02_max_iter_500_00000.jld2")
+    data_path = joinpath(@__DIR__, "data/limited_drives_T_100_dt_1.0_dda_0.002_a_0.02_max_iter_500_00001.jld2")
     data = load_problem(data_path; return_data=true)
     init_traj = data["trajectory"]
     init_drives = init_traj.a
@@ -104,6 +46,7 @@ prob = UnitarySmoothPulseProblem(
     U_goal,
     T,
     warm_start ? init_Δt : Δt;
+    U_init=U_init,
     Δt_max=Δt_max,
     Δt_min=Δt_min,
     a_bound=a_bound,
@@ -115,7 +58,7 @@ prob = UnitarySmoothPulseProblem(
 save_dir = joinpath(@__DIR__, "data")
 plot_dir = joinpath(@__DIR__, "plots")
 
-experiment_name = "levels_$(levels)_limited_drives_T_$(T)_dt_$(Δt)_dda_$(dda_bound)_a_$(a_bound)_max_iter_$(max_iter)"
+experiment_name = "levels_$(join(levels, "_"))_drives_$(join(drives, "_"))_T_$(T)_dt_$(Δt)_dda_$(dda_bound)_a_$(a_bound)_max_iter_$(max_iter)"
 
 save_path = generate_file_path("jld2", experiment_name, save_dir)
 plot_path = generate_file_path("png", experiment_name, plot_dir)
