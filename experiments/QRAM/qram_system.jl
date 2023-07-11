@@ -67,46 +67,53 @@ end
 
 function qram_subspace_unitary(
     levels::Vector{Int},
-    gate::AbstractMatrix{<:Number},
+    gate_name::Symbol,
     qubit::Union{Int, Vector{Int}}
 )
     if qubit isa Int
-        @assert size(gate, 1) == size(gate, 2) == 2 "Gate must be a single-qubit gate"
+        @assert length(string(gate)) == 1
+        @assert gate ∈ keys(GATES)
+        gate = zeros(ComplexF64, levels[qubit], levels[qubit])
+        gate[1:2, 1:2] = GATES[gate_name]
     else
+        @assert length(qubit) == 2 "only 2-qubit gates are supported, for now"
         @assert all(qubit .== qubit[1]:qubit[end]) "Qubits must be consecutive"
-        @assert size(gate, 1) == size(gate, 2) == 2^length(qubit) "Gate must be a multi-qubit gate"
+        @assert length(string(gate_name)) == length(qubit)
+        @assert first(string(gate_name)) == 'C' "Only controlled gates are supported, for now"
+        @assert Symbol(last(string(gate_name))) ∈ keys(GATES)
+        @assert gate_name == :CX "Only CX gates are supported, for now"
+        g1 = cavity_state(0, levels[qubit[1]])
+        e1 = cavity_state(1, levels[qubit[1]])
+        g2 = cavity_state(0, levels[qubit[2]])
+        e2 = cavity_state(1, levels[qubit[2]])
+        gg = g1 ⊗ g2
+        ge = g1 ⊗ e2
+        eg = e1 ⊗ g2
+        ee = e1 ⊗ e2
+        gate = gg * gg' + ge * ge' + ee * eg' + eg * ee'
     end
 
-    U_init = []
-    U_goal = []
-    Ids = []
+    # fill with ones to handle kron of possibly only one element
+    U_init = [[1.0 + 0.0im;;]]
+    U_goal = [[1.0 + 0.0im;;]]
+    added_gate = false
     for (i, level) ∈ enumerate(levels)
         gᵢ = cavity_state(0, level)
         eᵢ = cavity_state(1, level)
         Idᵢ =  gᵢ * gᵢ' + eᵢ * eᵢ'
-        push!(Ids, Idᵢ)
-    end
-
-        if i == qubit
-            push!(U_init, Idᵢ)
-            Uᵢ = zeros(ComplexF64, level, level)
-            Uᵢ[1:2, 1:2] = gate
-            push!(U_goal, Uᵢ)
+        push!(U_init, Idᵢ)
+        if i ∈ qubit
+            if added_gate
+                continue
+            else
+                push!(U_goal, gate)
+                added_gate = true
+            end
         else
-            push!(U_init, Idᵢ)
             push!(U_goal, Idᵢ)
         end
     end
-    U_init = kron(Ids...)
+    U_init = kron(U_init...)
     U_goal = kron(U_goal...)
     return U_init, U_goal
-end
-
-function qram_subspace_unitary(
-    levels::Vector{Int},
-    gate::Symbol,
-    qubit::Int
-)
-    U = GATES[gate]
-    return qram_subspace_unitary(levels, U, qubit)
 end
