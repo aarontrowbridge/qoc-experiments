@@ -10,7 +10,7 @@ include(joinpath(@__DIR__, "qram_system.jl"))
 experimental_levels = 3
 
 qubits = [1, 2, 3, 4]
-levels = [3, 3, 3, 3]
+levels = fill(experimental_levels, length(qubits))
 drives = [1, 2, 3, 4]
 
 experimental_system = QRAMSystem(; qubits=qubits, levels=levels, drives=drives)
